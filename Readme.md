@@ -86,16 +86,23 @@ npm install -D nodemon
 ```bash
 cd ../frontend
 
-# Create React app
-npx create-react-app .
-
 # Install dependencies
-npm install axios recharts date-fns react-query
+npm install
+
+# Create .env file
+Copy-Item .env.example .env
 ```
 
-**Update files:**
-- Copy the React Dashboard code → `frontend/src/App.js`
-- Update `frontend/package.json` to add proxy: `"proxy": "http://localhost:5000"`
+**Frontend Stack:**
+- React.js 18 with Vite
+- Tailwind CSS for styling
+- Framer Motion for animations
+- Recharts for data visualization
+- Lucide React for icons
+- React Router DOM for routing
+- Axios for API calls
+
+See `frontend/README.md` for detailed frontend documentation.
 
 ### 5. Environment Configuration
 
@@ -170,7 +177,7 @@ python main.py            # Run with scheduler (every 30 min)
 ### Terminal 4: Start React Frontend
 ```bash
 cd frontend
-npm start
+npm run dev
 # Frontend runs on http://localhost:3000
 ```
 
@@ -370,12 +377,20 @@ news-aggregator/
 │   ├── routes/
 │   │   └── articles.js
 │   ├── server.js
-│   └── package.json
+│   ├── package.json
+│   └── .env
 ├── frontend/
 │   ├── src/
-│   │   └── App.js
-│   └── package.json
-└── .env
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/           # Dashboard, Insights, Sources, About
+│   │   ├── context/         # Theme context
+│   │   ├── services/        # API service
+│   │   └── utils/           # Helpers & constants
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   └── README.md
+└── README.md
 ```
 
 ---

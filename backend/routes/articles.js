@@ -78,32 +78,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @route   GET /api/articles/:id
-// @desc    Get single article by ID
-// @access  Public
-router.get('/:id', async (req, res) => {
-  try {
-    const article = await Article.findById(req.params.id).select('-__v');
-
-    if (!article) {
-      return res.status(404).json({
-        success: false,
-        error: 'Article not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: article
-    });
-  } catch (error) {
-    console.error('Error fetching article:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error while fetching article'
-    });
-  }
-});
+// NOTE: the single-article route is declared after the /stats and other
+// static routes so that paths like /stats don't get interpreted as an ID.
 
 // @route   GET /api/articles/stats/sentiment
 // @desc    Get sentiment statistics
@@ -318,3 +294,33 @@ router.get('/keywords/top', async (req, res) => {
 });
 
 module.exports = router;
+
+// ----------------------------
+// Single-article route (placed last)
+// ----------------------------
+// @route   GET /api/articles/:id
+// @desc    Get single article by ID
+// @access  Public
+router.get('/:id', async (req, res) => {
+  try {
+    const article = await Article.findById(req.params.id).select('-__v');
+
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: article
+    });
+  } catch (error) {
+    console.error('Error fetching article:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching article'
+    });
+  }
+});

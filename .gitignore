@@ -1,0 +1,11 @@
+.env
+backend/node_modules/
+scraper/.venv/
+# Python cache
+__pycache__/
+*.py[cod]
+# VSCode
+.vscode/
+# OS files
+Thumbs.db
+.DS_Store

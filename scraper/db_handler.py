@@ -1,25 +1,52 @@
 from pymongo import MongoClient, DESCENDING
 from pymongo.errors import DuplicateKeyError
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
+import pathlib
 
-load_dotenv()
+# Try loading the .env file from a few likely locations:
+# 1) repo root/.env
+# 2) repo root/backend/.env (user indicated .env is inside backend folder)
+# If none found, fall back to default load_dotenv() which will look in CWD and environment.
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+env_candidates = [
+    os.path.join(repo_root, '.env'),
+    os.path.join(repo_root, 'backend', '.env'),
+]
+loaded = False
+for p in env_candidates:
+    try:
+        if os.path.exists(p):
+            load_dotenv(dotenv_path=p)
+            print(f"🔁 Loaded env from: {p}")
+            loaded = True
+            break
+    except Exception:
+        # ignore and try next
+        pass
+
+if not loaded:
+    # Last-resort: let python-dotenv try to find an .env automatically
+    load_dotenv()
+    print("⚠️  No .env found at repo root or backend/.env; attempted automatic load (may use system env vars)")
+
 
 class DatabaseHandler:
     def __init__(self):
         """Initialize MongoDB connection"""
-        self.mongo_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+        # Support both MONGO_URL and MONGODB_URI environment variable names
+        self.mongo_uri = os.getenv('MONGO_URL') or os.getenv('MONGODB_URI') 
         self.db_name = os.getenv('DB_NAME', 'news_aggregator')
-        
+
         try:
             self.client = MongoClient(self.mongo_uri)
             self.db = self.client[self.db_name]
             self.articles = self.db['articles']
-            
+
             # Create indexes
             self.setup_indexes()
-            
+
             print(f"✅ Connected to MongoDB: {self.db_name}")
         except Exception as e:
             print(f"❌ MongoDB connection error: {str(e)}")
@@ -204,8 +231,8 @@ if __name__ == "__main__":
         'url': 'https://example.com/test-unique-123',
         'description': 'This is a test article',
         'source': 'Test Source',
-        'publishedDate': datetime.utcnow().isoformat(),
-        'scrapedAt': datetime.utcnow().isoformat(),
+        'publishedDate': datetime.now(timezone.utc).isoformat(),
+        'scrapedAt': datetime.now(timezone.utc).isoformat(),
         'sentiment': {
             'score': 0.5,
             'label': 'positive'
