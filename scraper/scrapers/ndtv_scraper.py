@@ -151,11 +151,29 @@ class NDTVScraper:
             )
             description = description_elem.get_text(strip=True) if description_elem else ""
 
-            # Thumbnail: prefer img inside anchor with class NwsLstPg_img
-            img_url = None
-            img_tag = article_element.select_one('a.NwsLstPg_img img') or article_element.select_one('img')
-            if img_tag and img_tag.has_attr('src'):
-                img_url = img_tag['src']
+            # Extract image - prefer img with class NwsLstPg_img-full or inside anchor with class NwsLstPg_img
+            image_url = None
+            img_tag = (
+                article_element.select_one('img.NwsLstPg_img-full') or 
+                article_element.select_one('a.NwsLstPg_img img') or 
+                article_element.select_one('img')
+            )
+            if img_tag:
+                # Try srcset first for higher resolution
+                if img_tag.has_attr('srcset'):
+                    srcset = img_tag['srcset']
+                    urls = [s.strip().split()[0] for s in srcset.split(',') if s.strip()]
+                    if urls:
+                        image_url = urls[-1]
+                # Fallback to src
+                elif img_tag.has_attr('src'):
+                    image_url = img_tag['src']
+                
+                # Make image URL absolute
+                if image_url and image_url.startswith('//'):
+                    image_url = f"https:{image_url}"
+                elif image_url and image_url.startswith('/'):
+                    image_url = f"https://www.ndtv.com{image_url}"
 
             article = {
                 'title': title,
@@ -166,7 +184,7 @@ class NDTVScraper:
                 'publishedDate': datetime.utcnow().isoformat(),
                 'scrapedAt': datetime.utcnow().isoformat(),
                 'content': description,
-                'thumbnail': img_url
+                'image': image_url
             }
             return article
             

@@ -28,10 +28,25 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [selectedSource, setSelectedSource] = useState('All')
   const [selectedSentiment, setSelectedSentiment] = useState('All')
+  const [currentSlide, setCurrentSlide] = useState(0)
 
   useEffect(() => {
     loadData()
   }, [selectedSource, selectedSentiment])
+
+  // Auto slider effect - 3 seconds interval, shows 4 cards at a time (2 rows of 2)
+  useEffect(() => {
+    if (articles.length > 4) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => {
+          const nextSlide = prev + 4
+          return nextSlide >= articles.length ? 0 : nextSlide
+        })
+      }, 3000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [articles.length])
 
   const loadData = async () => {
     try {
@@ -63,7 +78,7 @@ const Dashboard = () => {
   // Prepare chart data
   const sentimentData = stats?.sentimentDistribution || []
   const pieData = sentimentData.map((item) => ({
-    name: item._id,
+    name: item.label,
     value: item.count,
   }))
 
@@ -73,9 +88,9 @@ const Dashboard = () => {
     negative: '#ef4444',
   }
 
-  const sourceData = stats?.sourceStats || []
+  const sourceData = stats?.sourceDistribution || []
   const barData = sourceData.map((item) => ({
-    name: item._id,
+    name: item.source,
     positive: item.positive || 0,
     neutral: item.neutral || 0,
     negative: item.negative || 0,
@@ -155,43 +170,9 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content - News Cards */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-white">
-              Latest Articles ({articles.length})
-            </h2>
-          </div>
-
-          {loading ? (
-            <SkeletonGrid count={6} />
-          ) : articles.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6">
-              {articles.map((article, index) => (
-                <NewsCard key={article._id || index} article={article} index={index} />
-              ))}
-            </div>
-          ) : (
-            <motion.div
-              variants={ANIMATION_VARIANTS.fadeIn}
-              initial="hidden"
-              animate="visible"
-              className="card-gradient rounded-xl p-12 text-center border border-white/10"
-            >
-              <TrendingUp className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-400 mb-2">
-                No articles found
-              </h3>
-              <p className="text-gray-500">
-                Try adjusting your filters or refresh the data
-              </p>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Right Panel - Charts */}
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        {/* Left Panel - Charts (Takes 1 column) */}
+        <div className="xl:col-span-1 space-y-6">
           {/* Sentiment Distribution Pie Chart */}
           {loading ? (
             <SkeletonChart />
@@ -200,12 +181,12 @@ const Dashboard = () => {
               variants={ANIMATION_VARIANTS.slideInFromRight}
               initial="hidden"
               animate="visible"
-              className="card-gradient rounded-xl p-6 border border-white/10"
+              className="card-gradient rounded-xl p-6 border border-white/10 sticky top-4"
             >
               <h3 className="text-lg font-semibold text-white mb-4">
                 Sentiment Distribution
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -238,16 +219,16 @@ const Dashboard = () => {
               initial="hidden"
               animate="visible"
               transition={{ delay: 0.2 }}
-              className="card-gradient rounded-xl p-6 border border-white/10"
+              className="card-gradient rounded-xl p-6 border border-white/10 sticky top-[260px]"
             >
               <h3 className="text-lg font-semibold text-white mb-4">
                 Sentiment by Source
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                  <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
+                  <YAxis stroke="#9ca3af" fontSize={12} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#1e293b',
@@ -255,7 +236,7 @@ const Dashboard = () => {
                       borderRadius: '8px',
                     }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar dataKey="positive" fill="#22c55e" />
                   <Bar dataKey="neutral" fill="#eab308" />
                   <Bar dataKey="negative" fill="#ef4444" />
@@ -273,29 +254,94 @@ const Dashboard = () => {
               initial="hidden"
               animate="visible"
               transition={{ delay: 0.4 }}
-              className="card-gradient rounded-xl p-6 border border-white/10"
+              className="card-gradient rounded-xl p-6 border border-white/10 sticky top-[500px]"
             >
               <h3 className="text-lg font-semibold text-white mb-4">Quick Stats</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Total Articles</span>
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-gray-400 text-sm">Total Articles</span>
+                  <span className="text-xl font-bold text-white">
                     {stats?.totalArticles || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Sources</span>
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-gray-400 text-sm">Sources</span>
+                  <span className="text-xl font-bold text-white">
                     {sourceData.length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Avg Sentiment</span>
-                  <span className="text-2xl font-bold text-blue-400">
+                  <span className="text-gray-400 text-sm">Avg Sentiment</span>
+                  <span className="text-xl font-bold text-blue-400">
                     {stats?.averageSentiment?.toFixed(2) || 'N/A'}
                   </span>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Right Panel - News Cards (Takes 3 columns) */}
+        <div className="xl:col-span-3 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white">
+              Latest Articles ({articles.length})
+            </h2>
+          </div>
+
+          {loading ? (
+            <SkeletonGrid count={6} />
+          ) : articles.length > 0 ? (
+            <div className="relative overflow-hidden">
+              <motion.div 
+                className="grid grid-cols-2 gap-8 max-w-[2100px] mx-auto"
+                key={currentSlide}
+                initial={{ opacity: 0, x: 100, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -100, scale: 0.95 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              >
+                {articles.slice(currentSlide, currentSlide + 4).map((article, index) => (
+                  <NewsCard key={article._id || index} article={article} index={index} />
+                ))}
+              </motion.div>
+              
+              {/* Slider Indicators */}
+              <div className="flex justify-center items-center gap-3 mt-8">
+                {Array.from({ length: Math.ceil(articles.length / 4) }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index * 4)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                      Math.floor(currentSlide / 4) === index
+                        ? 'w-10 bg-gradient-to-r from-blue-500 to-purple-600'
+                        : 'w-2.5 bg-gray-600 hover:bg-gray-500'
+                    }`}
+                  />
+                ))}
+              </div>
+              
+              {/* Slide Counter */}
+              <div className="text-center mt-4">
+                <span className="text-sm text-gray-400">
+                  {Math.floor(currentSlide / 4) + 1} / {Math.ceil(articles.length / 4)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <motion.div
+              variants={ANIMATION_VARIANTS.fadeIn}
+              initial="hidden"
+              animate="visible"
+              className="card-gradient rounded-xl p-12 text-center border border-white/10"
+            >
+              <TrendingUp className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-400 mb-2">
+                No articles found
+              </h3>
+              <p className="text-gray-500">
+                Try adjusting your filters or refresh the data
+              </p>
             </motion.div>
           )}
         </div>

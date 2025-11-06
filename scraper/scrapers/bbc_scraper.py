@@ -137,6 +137,27 @@ class BBCScraper:
             )
             description = description_elem.get_text(strip=True) if description_elem else ""
             
+            # Extract image - look for img tag with srcset or src
+            image_url = None
+            img_elem = article_element.find('img')
+            if img_elem:
+                # Try srcset first (contains multiple resolutions)
+                if img_elem.get('srcset'):
+                    srcset = img_elem['srcset']
+                    # Parse srcset and get the highest resolution image
+                    urls = [s.strip().split()[0] for s in srcset.split(',') if s.strip()]
+                    if urls:
+                        image_url = urls[-1]  # Usually the last one is highest resolution
+                # Fallback to src
+                elif img_elem.get('src'):
+                    image_url = img_elem['src']
+                
+                # Make image URL absolute
+                if image_url and image_url.startswith('//'):
+                    image_url = f"https:{image_url}"
+                elif image_url and image_url.startswith('/'):
+                    image_url = f"https://www.bbc.com{image_url}"
+            
             # Find published time (may not always be available)
             time_elem = article_element.find('time')
             published_date = time_elem['datetime'] if time_elem and time_elem.get('datetime') else None
@@ -152,7 +173,8 @@ class BBCScraper:
                 'category': 'General',
                 'publishedDate': published_date or datetime.utcnow().isoformat(),
                 'scrapedAt': datetime.utcnow().isoformat(),
-                'content': content or description  # prefer full content when available
+                'content': content or description,  # prefer full content when available
+                'image': image_url
             }
             
         except Exception as e:

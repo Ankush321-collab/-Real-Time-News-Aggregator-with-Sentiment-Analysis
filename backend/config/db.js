@@ -4,10 +4,7 @@ const connectDB = async () => {
   try {
     // Support both MONGO_URL and MONGODB_URI env var names
     const mongoUri = process.env.MONGO_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/news_aggregator';
-    const conn = await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const conn = await mongoose.connect(mongoUri);
 
     // Prefer DB_NAME env for logging when provided
     const dbName = process.env.DB_NAME || conn.connection.name || 'news_aggregator';

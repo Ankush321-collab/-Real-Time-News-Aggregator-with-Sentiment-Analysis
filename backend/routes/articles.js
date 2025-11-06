@@ -81,6 +81,123 @@ router.get('/', async (req, res) => {
 // NOTE: the single-article route is declared after the /stats and other
 // static routes so that paths like /stats don't get interpreted as an ID.
 
+// @route   GET /api/articles/stats
+// @desc    Get combined statistics (sentiment + sources)
+// @access  Public
+router.get('/stats', async (req, res) => {
+  try {
+    const { source, startDate, endDate } = req.query;
+
+    // Build match query
+    const matchQuery = {};
+    if (source) matchQuery.source = source;
+    if (startDate || endDate) {
+      matchQuery.scrapedAt = {};
+      if (startDate) matchQuery.scrapedAt.$gte = new Date(startDate);
+      if (endDate) matchQuery.scrapedAt.$lte = new Date(endDate);
+    }
+
+    // Get total count first to check if there's any data
+    const totalCount = await Article.countDocuments(matchQuery);
+
+    // If no articles, return empty stats
+    if (totalCount === 0) {
+      return res.json({
+        success: true,
+        data: {
+          sentimentDistribution: [],
+          sourceDistribution: [],
+          totalArticles: 0
+        }
+      });
+    }
+
+    // Get sentiment distribution
+    const sentimentStats = await Article.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: '$sentiment.label',
+          count: { $sum: 1 },
+          avgScore: { $avg: '$sentiment.score' }
+        }
+      },
+      {
+        $project: {
+          label: '$_id',
+          count: 1,
+          avgScore: { $round: ['$avgScore', 4] },
+          _id: 0
+        }
+      }
+    ]);
+
+    // Get source statistics
+    const sourceStats = await Article.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: '$source',
+          count: { $sum: 1 },
+          positive: {
+            $sum: {
+              $cond: [{ $eq: ['$sentiment.label', 'positive'] }, 1, 0]
+            }
+          },
+          negative: {
+            $sum: {
+              $cond: [{ $eq: ['$sentiment.label', 'negative'] }, 1, 0]
+            }
+          },
+          neutral: {
+            $sum: {
+              $cond: [{ $eq: ['$sentiment.label', 'neutral'] }, 1, 0]
+            }
+          },
+          avgSentiment: { $avg: '$sentiment.score' }
+        }
+      },
+      {
+        $project: {
+          source: '$_id',
+          count: 1,
+          positive: 1,
+          negative: 1,
+          neutral: 1,
+          avgSentiment: { $round: ['$avgSentiment', 4] },
+          _id: 0
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Calculate total and percentages for sentiment
+    const total = sentimentStats.reduce((sum, stat) => sum + stat.count, 0);
+    const sentimentWithPercentage = sentimentStats.map(stat => ({
+      ...stat,
+      percentage: total > 0 ? Math.round((stat.count / total) * 100) : 0
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        sentimentDistribution: sentimentWithPercentage,
+        sourceDistribution: sourceStats,
+        totalArticles: total
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching combined stats:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching statistics',
+      message: error.message
+    });
+  }
+});
+
 // @route   GET /api/articles/stats/sentiment
 // @desc    Get sentiment statistics
 // @access  Public
@@ -293,8 +410,6 @@ router.get('/keywords/top', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // ----------------------------
 // Single-article route (placed last)
 // ----------------------------
@@ -324,3 +439,5 @@ router.get('/:id', async (req, res) => {
     });
   }
 });
+
+module.exports = router;
