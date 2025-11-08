@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion'
 import { ExternalLink, Calendar, TrendingUp, TrendingDown, Minus, Share2, Bookmark, Clock } from 'lucide-react'
-import { formatDate, getSentimentColor, getSentimentBg, truncateText, formatRelativeTime } from '../utils/helpers'
+import { formatDate, getSentimentColor, getSentimentBg, truncateText } from '../utils/helpers'
 import { ANIMATION_VARIANTS } from '../utils/constants'
+import { useTheme } from '../context/ThemeContext'
 
 const NewsCard = ({ article, index, onBookmark, onShare, isBookmarked = false }) => {
   const { title, description, url, source, publishedDate, scrapedAt, sentiment, image, readTime, category } = article
+  const { isDark } = useTheme()
 
   const getSentimentIcon = (label) => {
     switch (label?.toLowerCase()) {
@@ -49,7 +51,11 @@ const NewsCard = ({ article, index, onBookmark, onShare, isBookmarked = false })
       {/* Background Glow Effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       
-      <div className="card-gradient rounded-2xl p-10 border border-white/10 hover:border-blue-400/30 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 flex flex-col h-[850px] w-full relative overflow-hidden">
+      <div className={`card-gradient rounded-2xl p-10 border transition-all duration-300 shadow-xl hover:shadow-2xl flex flex-col h-[550px] w-full relative overflow-hidden ${
+        isDark 
+          ? 'border-white/10 hover:border-blue-400/30 hover:shadow-blue-500/20' 
+          : 'border-gray-200 hover:border-blue-400/50 hover:shadow-blue-500/30 bg-white'
+      }`}>
         
         {/* Image Thumbnail */}
         {image && (
@@ -101,7 +107,9 @@ const NewsCard = ({ article, index, onBookmark, onShare, isBookmarked = false })
               className={`p-2 rounded-lg backdrop-blur-sm border transition-all ${
                 isBookmarked 
                   ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' 
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                  : isDark
+                    ? 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                    : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
               }`}
             >
               <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -111,7 +119,11 @@ const NewsCard = ({ article, index, onBookmark, onShare, isBookmarked = false })
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleShare}
-              className="p-2 rounded-lg backdrop-blur-sm bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+              className={`p-2 rounded-lg backdrop-blur-sm border transition-all ${
+                isDark
+                  ? 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                  : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+              }`}
             >
               <Share2 className="w-4 h-4" />
             </motion.button>
@@ -119,19 +131,25 @@ const NewsCard = ({ article, index, onBookmark, onShare, isBookmarked = false })
         </div>
 
         {/* Title */}
-        <h3 className="text-2xl font-bold text-white mb-5 group-hover:text-blue-400 transition-colors duration-200 leading-tight min-h-[80px]">
+        <h3 className={`text-2xl font-bold mb-5 group-hover:text-blue-400 transition-colors duration-200 leading-tight min-h-[80px] ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}>
           <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
             {title}
           </a>
         </h3>
 
         {/* Description */}
-        <p className="text-gray-300 text-base mb-6 line-clamp-4 flex-grow leading-relaxed">
+        <p className={`text-base mb-6 line-clamp-4 flex-grow leading-relaxed ${
+          isDark ? 'text-gray-300' : 'text-gray-700'
+        }`}>
           {truncateText(description, 250)}
         </p>
 
         {/* Metadata */}
-        <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+        <div className={`flex items-center justify-between text-sm mb-4 ${
+          isDark ? 'text-gray-400' : 'text-gray-600'
+        }`}>
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-1">
               <Calendar className="w-4 h-4" />
@@ -144,7 +162,11 @@ const NewsCard = ({ article, index, onBookmark, onShare, isBookmarked = false })
               </div>
             )}
           </div>
-          <span className="font-semibold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md">
+          <span className={`font-semibold px-2 py-1 rounded-md ${
+            isDark 
+              ? 'text-blue-400 bg-blue-500/10' 
+              : 'text-blue-600 bg-blue-100'
+          }`}>
             {source}
           </span>
         </div>
@@ -152,11 +174,15 @@ const NewsCard = ({ article, index, onBookmark, onShare, isBookmarked = false })
         {/* Confidence Score */}
         {sentiment?.confidence && (
           <div className="mb-4">
-            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <div className={`flex items-center justify-between text-xs mb-1 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
               <span>Confidence</span>
               <span>{Math.round(sentiment.confidence * 100)}%</span>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-1.5">
+            <div className={`w-full rounded-full h-1.5 ${
+              isDark ? 'bg-gray-700' : 'bg-gray-200'
+            }`}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${sentiment.confidence * 100}%` }}

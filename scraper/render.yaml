@@ -1,0 +1,16 @@
+services:
+  # Background Worker - Continuous Scraping (runs every 24 hours)
+  - type: worker
+    name: news-scraper-worker
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py --interval 1440
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: DB_NAME
+        value: news_aggregator
+      - key: PYTHON_VERSION
+        value: 3.11.0

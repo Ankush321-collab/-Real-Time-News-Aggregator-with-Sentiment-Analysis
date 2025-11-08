@@ -34,7 +34,7 @@ const Dashboard = () => {
     loadData()
   }, [selectedSource, selectedSentiment])
 
-  // Auto slider effect - 3 seconds interval, shows 4 cards at a time (2 rows of 2)
+  // Auto slider effect - 5 seconds interval, shows 4 cards at a time (2 rows of 2)
   useEffect(() => {
     if (articles.length > 4) {
       const interval = setInterval(() => {
@@ -42,7 +42,7 @@ const Dashboard = () => {
           const nextSlide = prev + 4
           return nextSlide >= articles.length ? 0 : nextSlide
         })
-      }, 3000)
+      }, 5000)
       
       return () => clearInterval(interval)
     }
